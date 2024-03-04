@@ -1,0 +1,113 @@
+.data     
+.macro input(%local)   
+    .data   
+    .text  
+        li $v0, 5   
+        syscall   
+        move %local, $v0   
+    .end_macro   
+
+.macro print(%msg)   
+    .data   
+    msg: .asciiz %msg
+    .text   
+        li $v0, 4   
+        la $a0, msg 
+        syscall    
+    .end_macro   
+
+.macro menu()
+    print("menu\n 1 - saldo \n 2 - deposito\n 3 - saque\n 4 - encerrar\n ")
+.end_macro
+
+.macro sair()
+    li $v0, 10
+    syscall
+.end_macro
+
+.macro printint(%int)
+    .data 
+    .text   
+        li $v0, 1
+        move $a0, %int
+        syscall 
+.end_macro
+
+.text
+limite:
+    print("digite seu limite\n")
+    input($s0)
+
+usuario:
+    print("digite seu ID\n")
+    input($t5)
+    beq $t5 , $t6, senha
+    j erro
+
+senha:
+    print("digite sua senha\n")
+    input($t4)
+    beq $t4 , $t7, comeco
+    j erro
+
+comeco:
+    print("\n escolha uma das opcoes\n")
+    menu()
+    input($t0)
+    j verifica
+
+verifica:
+    beq $t0, 1 , saldo
+    beq $t0, 2 , deposito
+    beq $t0, 3 , saque
+    beq $t0, 4 , Sair
+
+saldo:
+    printint($t3)
+    jal comeco
+
+deposito:
+    print("digite a quantia do deposito\n")
+    input($t2)
+    add $t3, $t2, $t3
+    print("deposito efetuado com exito\n saldo atual: \n")
+    printint($t3)
+    jal comeco
+
+saque:
+    add $s1, $s0, $t3             # Calcula o saldo mais o limite ($s0)
+    print("Coloque a quantia do saque: \n")
+    input($t2)
+    bgt $t2, $s1, veremprestimo    # Verifica se o saque excede o saldo mais o limite
+    sub $t3, $t3, $t2              # Subtrai o valor do saque do saldo
+    print("Saque efetuado com sucesso. Saldo atual: \n")
+    printint($t3)
+    jal comeco
+
+veremprestimo:
+    sub $s2, $t2, $s1
+    print("Você excedeu o valor do seu limite em: \n")
+    printint($s2)
+    print("Deseja fazer um empréstimo? Digite 1 para sim e 0 para não\n")
+    input($t1)
+    beq $t1, 1 , emprestimo        # Se o usuário concordar com o empréstimo
+    jal comeco                      # Se o usuário não concordar com o empréstimo
+
+emprestimo: 
+    add $t3, $s2, $t3              # Adiciona o valor excedido ao saldo
+    print("Empréstimo efetuado com sucesso. Saldo atual: \n")
+    printint($t3)
+    sub $t3, $t3, $t2              # Subtrai o valor do saque do saldo
+    print("Saque efetuado com sucesso após o empréstimo. Saldo atual: \n")
+    printint($t3)
+    jal comeco
+
+erro:
+    print("ID ou senha incorretos")
+    sair()
+
+Sair:
+    print("tem certeza que deseja sair digite \n 1 - para confirmar\n 0 - para cancelar\n")
+    input($t1)
+    beq $t1, 0 , comeco 
+    sair()
